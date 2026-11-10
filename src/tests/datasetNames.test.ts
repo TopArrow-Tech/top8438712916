@@ -1,0 +1,4 @@
+import{it,expect}from'vitest';import{availableDatasetName,datasetLabels}from'../features/datasets/names';import type{Dataset}from'../types';
+const dataset=(id:string,name:string,created=1000)=>({id,name,created,state:'ready'} as Dataset);
+it('新导入同名自动顺延，已有记录不修改',()=>{const existing=[dataset('a','x.log'),dataset('b','x.log（2）')];expect(availableDatasetName('x.log',existing)).toBe('x.log（3）');expect(existing[0].name).toBe('x.log');expect(availableDatasetName('  手动命名  ',existing)).toBe('手动命名');expect(()=>availableDatasetName(' ',existing)).toThrow();});
+it('已有同名记录显示时间和序号，即使同一毫秒也能区分',()=>{const rows=[dataset('b','x.log'),dataset('a','x.log'),dataset('c','y.log')],a=datasetLabels(rows);expect(a.get('a')).toContain('第1次');expect(a.get('b')).toContain('第2次');expect(a.get('a')).not.toBe(a.get('b'));expect(a.get('c')).toBe('y.log');expect(datasetLabels([...rows].reverse())).toEqual(a);expect(rows.map(r=>r.id)).toEqual(['b','a','c']);});

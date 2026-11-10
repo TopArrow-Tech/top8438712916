@@ -1,0 +1,11 @@
+import{cpSync,existsSync,mkdirSync,readFileSync,readdirSync,rmSync,statSync,writeFileSync,lstatSync}from'node:fs';
+import path from'node:path';
+const root=path.resolve(import.meta.dirname,'..'),target=path.join(root,'_release','LogScope');
+for(const name of ['manifest.json','server.mjs','public/index.html','LICENSES/README.md','icon.png'])if(!existsSync(path.join(root,name)))throw Error(`缺少发布文件：${name}`);
+const manifest=JSON.parse(readFileSync(path.join(root,'manifest.json'),'utf8'));if(manifest.version)throw Error('manifest 不应包含 version');
+if(manifest.ui?.icon!=='icon.png')throw Error('ui.icon 必须指向包内 icon.png');
+const icon=readFileSync(path.join(root,'icon.png'));if(icon.length===0||icon.length>200000||icon.toString('hex',0,8)!=='89504e470d0a1a0a'||icon.readUInt32BE(16)!==512||icon.readUInt32BE(20)!==512)throw Error('图标必须为 512×512 PNG，且不超过 200KB');
+rmSync(target,{recursive:true,force:true});mkdirSync(target,{recursive:true});
+for(const name of ['manifest.json','server.mjs','public','LICENSES','icon.png'])cpSync(path.join(root,name),path.join(target,name),{recursive:true});
+writeFileSync(path.join(target,'使用说明.txt'),'Nginx日志可视化分析 · LogScope\n\n通过平台安装并打开，无需自行安装开发依赖。\n选择日志文件，核对格式预览后导入，再查看分析或检索原始请求。\n日志只在本机处理，不上传第三方服务。运行数据由平台指定目录保存。\n本安装包不包含任何个人日志或历史记录，首次运行自动创建空数据库。\n复制按钮仅将选中日志写入剪贴板。删除数据集操作无法撤销。\n第三方组件许可及版权声明位于 LICENSES 目录。\n');
+let count=0,total=0;function inspect(dir){for(const entry of readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name),relative=path.relative(target,file);if(lstatSync(file).isSymbolicLink())throw Error(`发布目录不得含符号链接：${relative}`);if(/^(?:\.git|data|logs|uploads|backups|runtime|node_modules|_doc|_aiact|src|examples)$/i.test(entry.name)||/\.(?:sqlite(?:-wal|-shm)?|db|log|gz|pem|key|p12|pfx|exe)$/i.test(entry.name)||entry.name.startsWith('.env'))throw Error(`发现不应发布的文件：${relative}`);if(relative.length>200||/^(?:con|nul|prn|aux|com[1-9]|lpt[1-9])(?:\.|$)/i.test(entry.name))throw Error(`文件名不符合发布要求：${relative}`);if(entry.isDirectory())inspect(file);else{const size=statSync(file).size;if(size>256*1024*1024)throw Error(`单文件过大：${relative}`);count++;total+=size;}}}inspect(target);if(count>20000||total>1024**3)throw Error('发布目录超过数量或大小限制');console.log(JSON.stringify({directory:target,files:count,bytes:total},null,2));

@@ -1,0 +1,3 @@
+127.0.0.1 - - [02/Nov/2026:14:23:15 +0800] "GET /api/users?page=1 HTTP/1.1" 200 1024 "-" "Mozilla/5.0"
+2001:db8::1 - - [02/Nov/2026:14:24:15 +0800] "GET /missing HTTP/1.1" 404 128 "-" "ExampleBot/1.0"
+127.0.0.1 - - [02/Nov/2026:14:25:15 +0800] "POST /api/users HTTP/1.1" 499 0 "-" "Mozilla/5.0"

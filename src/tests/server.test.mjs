@@ -1,0 +1,12 @@
+import {beforeAll,afterAll,it,expect} from 'vitest';
+import {spawn} from 'node:child_process';import{mkdtempSync,rmSync}from'node:fs';import{tmpdir}from'node:os';import path from'node:path';import net from'node:net';
+let child,base,token,port;const data=mkdtempSync(path.join(tmpdir(),'logscope-test-'));
+async function start(){child=spawn(process.execPath,['server.mjs'],{env:{...process.env,TOPARROW_DATA_DIR:data,TOPARROW_APP_PORT:String(port)},stdio:'ignore'});for(let i=0;i<100;i++){try{const r=await fetch(base+'/__health');if(r.ok){token=(await(await fetch(base+'/api/session')).json()).token;return;}}catch{}await new Promise(r=>setTimeout(r,50));}throw Error('本机服务未能启动');}
+async function stop(){if(!child||child.exitCode!==null)return;await new Promise(r=>{child.once('exit',r);child.kill();});}
+async function api(route,body){return fetch(base+'/api/'+route,{method:body?'POST':'GET',headers:{'Content-Type':'application/json','X-LogScope-Token':token},body:body?JSON.stringify(body):undefined});}
+beforeAll(async()=>{port=await new Promise(r=>{const s=net.createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>r(p));});});base=`http://127.0.0.1:${port}`;await start();},15000);
+afterAll(async()=>{await stop();rmSync(data,{recursive:true,force:true});});
+it('拒绝无凭证与跨来源写入',async()=>{expect((await fetch(base+'/api/list')).status).toBe(403);expect((await fetch(base+'/api/save',{method:'POST',headers:{Origin:'https://example.com','X-LogScope-Token':token},body:'{}'})).status).toBe(403);});
+it('批次存取、分页与重启后持久化',async()=>{const dataset={id:'test',state:'ready',count:3};const rows=[1,2,3].map(line=>({dataset:'test',line,raw:'中文原文 '+line}));expect((await api('save',{dataset,rows})).ok).toBe(true);expect(await(await api('scan?id=test&after=1')).json()).toEqual(rows.slice(1));await stop();await start();expect(await(await api('list')).json()).toEqual([dataset]);expect(await(await api('scan?id=test')).json()).toEqual(rows);});
+it('重启会回滚未完成的数据集',async()=>{await api('save',{dataset:{id:'interrupted',state:'importing',count:1},rows:[{dataset:'interrupted',line:1}]});await stop();await start();const d=(await(await api('list')).json()).find(d=>d.id==='interrupted');expect(d.state).toBe('failed');expect(d.count).toBe(0);expect(await(await api('scan?id=interrupted')).json()).toEqual([]);});
+it('删除数据集及全部日志',async()=>{expect((await api('delete',{id:'test'})).ok).toBe(true);expect(await(await api('scan?id=test')).json()).toEqual([]);expect((await(await api('list')).json()).some(d=>d.id==='test')).toBe(false);});

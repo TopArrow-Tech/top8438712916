@@ -1,0 +1,5 @@
+192.0.2.1 - [02/Nov/2026:15:58:42 +0800] "POST /api/v2/room/gift_panel HTTP/1.1" 200 646 "-" "Dart/3.5 (dart:io)" 0.155 0.139 0.000 0.139
+192.0.2.2 - [02/Nov/2026:15:58:43 +0800] "POST /api/v2/room_report/stream_report HTTP/1.1" 200 67 "-" "Dart/3.5 (dart:io)" 0.066 0.050 0.000 0.050
+192.0.2.3 - [02/Nov/2026:15:58:43 +0800] "POST /api/v2/room/backpack_gift_panel HTTP/1.1" 200 595 "-" "Dart/3.5 (dart:io)" 0.118 0.103 0.000 0.103
+客户端IP=192.0.2.4 用户=- 时间=[02/Jul/2026:17:12:31 +0800] 请求="POST /api/v2/room/get_zego_token HTTP/1.1" 状态码=405 响应字节=150 来源="-" 设备="Dart/3.5 (dart:io)" 总耗时=0.000 响应耗时=- 连接耗时=- 首包耗时=-
+客户端IP=192.0.2.4 用户=- 时间=[02/Jul/2026:17:12:36 +0800] 请求="POST /api/v2/room_report/in_room_report HTTP/1.1" 状态码=405 响应字节=150 来源="-" 设备="Dart/3.5 (dart:io)" 总耗时=0.034 响应耗时=- 连接耗时=- 首包耗时=-

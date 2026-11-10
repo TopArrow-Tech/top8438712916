@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "top8438712916",
+  "name": "Nginx日志可视化分析",
+  "name_en": "LogScope",
+  "description": "本地导入、分析和检索 Nginx 访问日志，支持多文件与 gzip。",
+  "min_platform_version": null,
+  "runtime": {
+    "type": "node",
+    "min_version": "24.0",
+    "extensions": []
+  },
+  "database": {
+    "type": "sqlite"
+  },
+  "entry": {
+    "public_dir": "",
+    "main": "server.mjs",
+    "router": null,
+    "health": "/__health",
+    "index": null
+  },
+  "scripts": {
+    "install": null,
+    "migrate": null,
+    "uninstall": null
+  },
+  "data": {
+    "dirs": [],
+    "schema_version": null
+  },
+  "startup": {
+    "auto_start": false
+  },
+  "ui": {
+    "icon": "icon.png",
+    "open_mode": "app_window",
+    "window": null
+  },
+  "author": null,
+  "license": null,
+  "homepage": null
+}

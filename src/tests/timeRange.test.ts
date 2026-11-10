@@ -1,0 +1,11 @@
+import{it,expect,describe}from'vitest';import{timeBounds}from'../analytics/timeRange';import{matches,emptyFilters,createMatcher}from'../analytics/query';import type{LogRow}from'../types';
+const row=(time:string)=>({timestamp:Date.parse(time),ip:'::1',method:'GET',path:'/',status:200,ua:'test',raw:'test'} as LogRow);
+describe('时间筛选边界',()=>{
+ it('同一分钟只匹配该分钟，不能返回15点数据',()=>{const f={...emptyFilters,from:'2026-11-02T12:30',to:'2026-11-02T12:30'};const p=createMatcher(f);expect(p(row(new Date(2026,10,2,12,30,0).toISOString()))).toBe(true);expect(p(row(new Date(2026,10,2,12,30,59,999).toISOString()))).toBe(true);expect(p(row(new Date(2026,10,2,12,31,0).toISOString()))).toBe(false);expect(p(row(new Date(2026,10,2,15,7,6).toISOString()))).toBe(false);});
+ it('选择结束秒包含整秒，下一秒排除',()=>{const f={...emptyFilters,from:'2026-11-02T04:30:00Z',to:'2026-11-02T04:30:59Z'};expect(matches(row('2026-11-02T04:30:59.999Z'),f)).toBe(true);expect(matches(row('2026-11-02T04:31:00Z'),f)).toBe(false);});
+ it('带时区与本机时间一致处理',()=>{const b=timeBounds('2026-11-02T12:30:00+08:00','2026-11-02T12:30:59+08:00');expect(b).toEqual({from:Date.parse('2026-11-02T04:30:00Z'),toExclusive:Date.parse('2026-11-02T04:31:00Z')});});
+ it('支持单边、清空、跨日和毫秒边界',()=>{expect(timeBounds('','')).toEqual({from:-Infinity,toExclusive:Infinity});expect(timeBounds('2026-11-02T00:00','').toExclusive).toBe(Infinity);expect(timeBounds('','2026-11-02T00:00').from).toBe(-Infinity);const p=createMatcher({...emptyFilters,from:'2026-11-01T23:59:59Z',to:'2026-11-02T00:00:00.123Z'});expect(p(row('2026-11-02T00:00:00.123Z'))).toBe(true);expect(p(row('2026-11-02T00:00:00.124Z'))).toBe(false);});
+ it('反向范围、未完成日期及非法日期拒绝，不能退回全量查询',()=>{for(const [from,to]of [['2026-11-02T12:31','2026-11-02T12:30'],['bad',''],['2026-11-02T12:',''],['2026-02-30T12:00',''],['2026-11-02T25:00','']])expect(()=>timeBounds(from,to)).toThrow();});
+ it('结束输入到分钟时可以包含该分钟内的起始秒',()=>expect(()=>timeBounds('2026-11-02T12:30:30','2026-11-02T12:30')).not.toThrow());
+ it('时间与其他筛选一起生效',()=>{const f={...emptyFilters,from:'2026-11-02T04:30:00Z',to:'2026-11-02T04:30:59Z',ip:'::1',status:'2xx'};expect(matches(row('2026-11-02T04:30:30Z'),f)).toBe(true);expect(matches({...row('2026-11-02T04:30:30Z'),ip:'::2'},f)).toBe(false);});
+});
